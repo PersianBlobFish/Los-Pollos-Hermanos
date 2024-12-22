@@ -2,8 +2,8 @@
 /*                                                                            */
 /*    Module:       main.cpp                                                  */
 /*    Author:       Admin                                                     */
-/*    Created:      11/18/2024, 2:01:17 PM                                    */
-/*    Description:  V5 project                                                */
+/*    Created:      11/27/2024, 11:18:17 AM                                    */
+/*    Description:  Copius vex project                                         */
 /*                                                                            */
 /*----------------------------------------------------------------------------*/
 
@@ -11,8 +11,11 @@
 
 using namespace vex;
 
+
 // A global instance of competition
 competition Competition;
+
+// Global defined for autonomous program
 
 // define your global instances of motors and other devices here
 
@@ -27,51 +30,50 @@ competition Competition;
 /*---------------------------------------------------------------------------*/
 
 void pre_auton(void) {
-   while (true) {
-        Brain.Screen.setFillColor(red);
-        Brain.Screen.drawRectangle(0, 0, 240, 120);
-        Brain.Screen.setFillColor(red);
-        Brain.Screen.drawRectangle(240, 0, 240, 120);
-        Brain.Screen.setFillColor(blue);
-        Brain.Screen.drawRectangle(0, 120, 240, 120);
-        Brain.Screen.setFillColor(blue);
-        Brain.Screen.drawRectangle(240, 120, 240, 120);
+      Brain.Screen.printAt( 10, 50, "Hello V5" );
+        while (true) {
+          Brain.Screen.setFillColor(red);
+          Brain.Screen.drawRectangle(0, 0, 240, 120);
+          Brain.Screen.setFillColor(red);
+          Brain.Screen.drawRectangle(240, 0, 240, 120);
+          Brain.Screen.setFillColor(blue);
+          Brain.Screen.drawRectangle(0, 120, 240, 120);
+          Brain.Screen.setFillColor(blue);
+          Brain.Screen.drawRectangle(240, 120, 240, 120);
 
 
-        waitUntil(Brain.Screen.pressing());
-        if (Brain.Screen.yPosition() < 120.0) {
-        if (Brain.Screen.xPosition() < 240.0) {
-            Brain.Screen.setFillColor(red);
-            Brain.Screen.drawRectangle(0, 0, 480, 240);
-            Brain.Screen.setCursor(6, 16);
-            Brain.Screen.print("LEFT AUTON");
-        }
-        else {
-            Brain.Screen.setFillColor(red);
-            Brain.Screen.drawRectangle(0, 0, 480, 240);
-            Brain.Screen.setCursor(6, 16);
-            Brain.Screen.print("RIGHT AUTON");
-        }
-        }
-        else {
-        if (Brain.Screen.xPosition() < 240.0) {
-            Brain.Screen.setFillColor(blue);
-            Brain.Screen.drawRectangle(0, 0, 480, 240);
-            Brain.Screen.setCursor(6, 16);
-            Brain.Screen.print("LEFT AUTON");
-        }
-        else {
-            Brain.Screen.setFillColor(blue);
-            Brain.Screen.drawRectangle(0, 0, 480, 240);
-            Brain.Screen.setCursor(6, 16);
-            Brain.Screen.print("RIGHT AUTON");
-        }
-    }
-    wait(2.0, seconds);
-  wait(5, msec);
-}
-  // All activities that occur before the competition starts
-  // Example: clearing encoders, setting servo positions, ...
+          waitUntil(Brain.Screen.pressing());
+          if (Brain.Screen.yPosition() < 120.0) {
+          if (Brain.Screen.xPosition() < 240.0) {
+              Brain.Screen.setFillColor(red);
+              Brain.Screen.drawRectangle(0, 0, 480, 240);
+              Brain.Screen.setCursor(6, 16);
+              Brain.Screen.print("LEFT AUTON");
+          }
+          else {
+              Brain.Screen.setFillColor(red);
+              Brain.Screen.drawRectangle(0, 0, 480, 240);
+              Brain.Screen.setCursor(6, 16);
+              Brain.Screen.print("RIGHT AUTON");
+          }
+          }
+          else {
+          if (Brain.Screen.xPosition() < 240.0) {
+              Brain.Screen.setFillColor(blue);
+              Brain.Screen.drawRectangle(0, 0, 480, 240);
+              Brain.Screen.setCursor(6, 16);
+              Brain.Screen.print("LEFT AUTON");
+          }
+          else {
+              Brain.Screen.setFillColor(blue);
+              Brain.Screen.drawRectangle(0, 0, 480, 240);
+              Brain.Screen.setCursor(6, 16);
+              Brain.Screen.print("RIGHT AUTON");
+          }
+      }
+      wait(2.0, seconds);
+    wait(5, msec);
+  }
 }
 
 /*---------------------------------------------------------------------------*/

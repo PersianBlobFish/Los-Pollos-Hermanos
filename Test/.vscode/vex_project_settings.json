@@ -1,16 +1,16 @@
 {
 	"extension": {
-		"version": "0.6.0",
+		"version": "0.6.1",
 		"json": 2
 	},
 	"project": {
-		"name": "10383A-Official",
+		"name": "Test",
 		"description": "",
-		"creationDate": "11/18/2024, 2:01:17 PM",
+		"creationDate": "11/20/2024, 3:52:10 PM",
 		"platform": "V5",
 		"language": "cpp",
 		"slot": 1,
-		"sdkVersion": "V5_20240223_11_00_00",
+		"sdkVersion": "V5_20240802_15_00_00",
 		"cpp": {
 			"includePath": [],
 			"printf_float": true
