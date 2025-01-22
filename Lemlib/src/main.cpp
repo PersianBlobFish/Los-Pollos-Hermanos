@@ -9,14 +9,14 @@ pros::MotorGroup leftMotors({-1, -2}, pros::MotorGearset::green); // left motor 
 pros::MotorGroup rightMotors({3, 4}, pros::MotorGearset::green); // right motor group
 
 // Inertial Sensor on port 10
-pros::Imu imu(10);
+pros::Imu imu(13);
 
 // drivetrain settings
 lemlib::Drivetrain drivetrain(&leftMotors, // left motor group
                               &rightMotors, // right motor group
-                              10, // 10 inch track width
-                              lemlib::Omniwheel::NEW_4, // using new 4" omnis
-                              360, // drivetrain rpm is 360
+                              14.05, // 10 inch track width
+                              lemlib::Omniwheel::OLD_325, // using new 3.25" omnis
+                              340, // drivetrain rpm is 360
                               2 // horizontal drift is 2. If we had traction wheels, it would have been 8
 );
 
@@ -125,7 +125,7 @@ void autonomous() {
     // Setting pose manually
     chassis.setPose({-60, 0, 90});
     // Follow set path
-    chassis.follow(test_txt, 15, 4000, true);
+    chassis.follow(test_txt, 15, 4000);
     // // Move to x: 20 and y: 15, and face heading 90. Timeout set to 4000 ms
     // chassis.moveToPose(20, 15, 90, 4000);
     // // Move to x: 0 and y: 0 and face heading 270, going backwards. Timeout set to 4000ms
