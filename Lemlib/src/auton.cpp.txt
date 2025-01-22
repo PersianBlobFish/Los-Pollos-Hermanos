@@ -1,0 +1,117 @@
+#include "main.h"
+#include <llemu.h>
+#include <llemu.hpp>
+
+// Global variable for autonomous selection
+int autonomousSelection = 0;
+
+// Function prototypes
+void leftAutonRed();
+void rightAutonRed();
+void leftAutonBlue();
+void rightAutonBlue();
+void pre_auton();
+
+// Define autonomous routine functions
+void leftAutonRed() {
+    pros::lcd::clear();
+    pros::lcd::set_text(2, "Executing LEFT AUTON - RED");
+    // Add your autonomous code for left red here
+}
+
+void rightAutonRed() {
+    pros::lcd::clear();
+    pros::lcd::set_text(2, "Executing RIGHT AUTON - RED");
+    // Add your autonomous code for right red here
+}
+
+void leftAutonBlue() {
+    pros::lcd::clear();
+    pros::lcd::set_text(2, "Executing LEFT AUTON - BLUE");
+    // Add your autonomous code for left blue here
+}
+
+void rightAutonBlue() {
+    pros::lcd::clear();
+    pros::lcd::set_text(2, "Executing RIGHT AUTON - BLUE");
+    // Add your autonomous code for right blue here
+}
+
+// Autonomous program selector
+void pre_auton() {
+    while (true) {
+        // Draw the selection menu
+        pros::lcd::clear();
+        pros::lcd::set_text(1, "Select Autonomous:");
+        pros::lcd::set_text(2, "1: Left Red");
+        pros::lcd::set_text(3, "2: Right Red");
+        pros::lcd::set_text(4, "3: Left Blue");
+        pros::lcd::set_text(5, "4: Right Blue");
+
+        if (pros::lcd::read_buttons() == LCD_BTN_LEFT) {
+            autonomousSelection = 0; // Left Red
+            pros::lcd::clear();
+            pros::lcd::set_text(2, "Selected: LEFT AUTON - RED");
+            break;
+        } else if (pros::lcd::read_buttons() == LCD_BTN_CENTER) {
+            autonomousSelection = 1; // Right Red
+            pros::lcd::clear();
+            pros::lcd::set_text(2, "Selected: RIGHT AUTON - RED");
+            break;
+        } else if (pros::lcd::read_buttons() == LCD_BTN_RIGHT) {
+            autonomousSelection = 2; // Left Blue
+            pros::lcd::clear();
+            pros::lcd::set_text(2, "Selected: LEFT AUTON - BLUE");
+            break;
+        } else if (pros::lcd::read_buttons() == (LCD_BTN_LEFT | LCD_BTN_RIGHT)) {
+            autonomousSelection = 3; // Right Blue
+            pros::lcd::clear();
+            pros::lcd::set_text(2, "Selected: RIGHT AUTON - BLUE");
+            break;
+        }
+
+        pros::delay(100);
+    }
+}
+
+// Autonomous function
+void autonomous() {
+    switch (autonomousSelection) {
+        case 0:
+            leftAutonRed();
+            break;
+        case 1:
+            rightAutonRed();
+            break;
+        case 2:
+            leftAutonBlue();
+            break;
+        case 3:
+            rightAutonBlue();
+            break;
+        default:
+            pros::lcd::set_text(2, "No autonomous selected!");
+            break;
+    }
+}
+
+// User control function
+void opcontrol() {
+    while (true) {
+        // Add your user control code here
+        pros::delay(20); // Sleep to prevent wasted resources
+    }
+}
+
+// Main function
+void initialize() {
+    // Initialize the LCD screen
+    pros::lcd::initialize();
+    pre_auton();
+}
+
+void disabled() {}
+
+void competition_initialize() {
+    pre_auton();
+}
