@@ -1,12 +1,17 @@
 #include "main.h"
 #include "lemlib/api.hpp" // IWYU pragma: keep
+#define POTENTIOMETER_PORT 'A'
 
 // controller
 pros::Controller controller(pros::E_CONTROLLER_MASTER);
 
 // motor groups
+pros::Motor ladyBrown(1, pros::MotorGearset::green); // left front motor
+pros::Motor intake(-6, pros::MotorGearset::green); // intake motor
+pros::Motor conveyor(-7, pros::MotorGearset::green); // conveyor motor
 pros::MotorGroup leftMotors({-1, -2}, pros::MotorGearset::green); // left motor group
 pros::MotorGroup rightMotors({3, 4}, pros::MotorGearset::green); // right motor group
+pros::ADIAnalogIn potentiometer(POTENTIOMETER_PORT);// line sensor on port 1
 
 // Inertial Sensor on port 10
 pros::Imu imu(13);
@@ -15,7 +20,7 @@ pros::Imu imu(13);
 lemlib::Drivetrain drivetrain(&leftMotors, // left motor group
                               &rightMotors, // right motor group
                               14.05, // 10 inch track width
-                              lemlib::Omniwheel::OLD_325, // using new 3.25" omnis
+                              lemlib::Omniwheel::OLD_325, // using old 3.25" omnis
                               340, // drivetrain rpm is 360
                               2 // horizontal drift is 2. If we had traction wheels, it would have been 8
 );
@@ -112,9 +117,7 @@ void competition_initialize() {}
 
 // get a path used for pure pursuit
 // this needs to be put outside a function
-ASSET(example_txt); // '.' replaced with "_" to make c++ happy
-ASSET(mid_txt);
-ASSET(test_txt);
+ASSET(test_txt); // '.' replaced with "_" to make c++ happy
 
 /**
  * Runs during auto
@@ -122,10 +125,25 @@ ASSET(test_txt);
  * This is an example autonomous routine which demonstrates a lot of the features LemLib has to offer
  */
 void autonomous() {
+    conveyor.move_velocity(200);
+    pros::delay(2000);
+    conveyor.move_velocity(0);
     // Setting pose manually
     chassis.setPose({-60, 0, 90});
-    // Follow set path
     chassis.follow(test_txt, 15, 4000);
+    // Follow set path
+    while (true) {
+        lemlib::Pose pose = chassis.getPose();
+        if (pose.x >= -30 && pose.y >= -18 ) {
+            intake.move_velocity(200)&&conveyor.move_velocity(200);
+            pros::delay(2000);
+            intake.move_velocity(0)&&conveyor.move_velocity(0);
+        }
+        // Update motors
+        // Delay to save resources
+        pros::delay(10);
+    }
+
     // // Move to x: 20 and y: 15, and face heading 90. Timeout set to 4000 ms
     // chassis.moveToPose(20, 15, 90, 4000);
     // // Move to x: 0 and y: 0 and face heading 270, going backwards. Timeout set to 4000ms
@@ -158,6 +176,52 @@ void autonomous() {
  * Runs in driver control
  */
 void opcontrol() {
+
+    while (true) {
+        if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_L1)) {
+            ladyBrown.move_velocity(100);
+        } else if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_L2)) {
+            ladyBrown.move_velocity(-100);
+        } else {
+            ladyBrown.move_velocity(0);
+        }
+    }
+
+    while (true) {
+        if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_R1)) {
+            intake.move_velocity(200);
+            conveyor.move_velocity(200);
+        } else if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_R2)) {
+            intake.move_velocity(-200);
+            conveyor.move_velocity(-200);
+        } else {
+            conveyor.move_velocity(0);
+            intake.move_velocity(0);
+        }
+    }
+
+    while (true) {
+        if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_A)) {
+            while (potentiometer.get_value() < 2060) {
+                ladyBrown.move_velocity(100);
+            }
+            if (potentiometer.get_value() > 2060) {
+                ladyBrown.move_velocity(0);
+            }
+        } else {
+           ladyBrown.move_velocity(0);
+        }
+    }
+
+    while (true) {
+        if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_L1)) {
+            ladyBrown.move_velocity(100);
+        } else if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_L2)) {
+            ladyBrown.move_velocity(-100);
+        } else {
+            ladyBrown.move_velocity(0);
+        }
+    }
     // controller
     // loop to continuously update motors
     while (true) {
