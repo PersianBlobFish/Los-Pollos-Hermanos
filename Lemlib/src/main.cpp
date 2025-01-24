@@ -6,14 +6,40 @@
 pros::Controller controller(pros::E_CONTROLLER_MASTER);
 
 // motor groups
-pros::Motor ladyBrown(1, pros::MotorGearset::green); // left front motor
+pros::Motor ladyBrown(9, pros::MotorGearset::green); // left front motor
 pros::Motor intake(-6, pros::MotorGearset::green); // intake motor
 pros::Motor conveyor(-7, pros::MotorGearset::green); // conveyor motor
 pros::MotorGroup leftMotors({-1, -2}, pros::MotorGearset::green); // left motor group
 pros::MotorGroup rightMotors({3, 4}, pros::MotorGearset::green); // right motor group
 pros::ADIAnalogIn potentiometer(POTENTIOMETER_PORT);// line sensor on port 1
 
-// Inertial Sensor on port 10
+void moveToAngle(int targetAngle) {
+    int targetValue = targetAngle * 4095 / 265; // Map 0-300 degrees to 0-4095 range
+    int currentValue = potentiometer.get_value();
+
+    // Move until the potentiometer value is close to the target
+    while (abs(currentValue - targetValue) > 10) { // 10 is a tolerance value
+        if (currentValue < targetValue) {
+            ladyBrown.move_velocity(50); // Forward
+        } else {
+            ladyBrown.move_velocity(-50); // Reverse
+        }
+        // Update the current value
+        currentValue = potentiometer.get_value();
+    }
+
+    // Stop the motor once the target is reached
+    ladyBrown.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
+}
+
+// Function to spin the both intake and conveyor motor
+void motorSpin(int speed, int duration) {
+    conveyor.move_velocity(speed) && intake.move_velocity(speed);
+    pros::delay(duration);
+    conveyor.move_velocity(0) && intake.move_velocity(0);
+}
+
+// Inertial Sensor on port 13
 pros::Imu imu(13);
 
 // drivetrain settings
@@ -132,20 +158,20 @@ void autonomous() {
     //Set the brake mode for Lady Brown
     ladyBrown.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
 
+    //Setting pose manually
+    chassis.setPose({-60, -18, 332});
+
     //Alliance wall stake
     conveyor.move_velocity(200);
     pros::delay(2000);
     conveyor.move_velocity(0);
-    // Setting pose manually
-    chassis.setPose({-60, 0, 90});
+
     chassis.follow(test_txt, 15, 4000);
     // Follow set path
     while (true) {
         lemlib::Pose pose = chassis.getPose();
         if (pose.x >= -30 && pose.y >= -18 ) {
-            while (potentiometer.get_value() < 2060) {
-                ladyBrown.move_velocity(100);
-            }
+            moveToAngle(23.94);
             intake.move_velocity(200)&&conveyor.move_velocity(200);
             pros::delay(2000);
             intake.move_velocity(0)&&conveyor.move_velocity(0);
