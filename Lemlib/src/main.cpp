@@ -1,6 +1,10 @@
 #include "main.h"
 #include "lemlib/api.hpp" // IWYU pragma: keep
+#include "lemlib-tarball/api.hpp" // IWYU pragma: keep
 #define POTENTIOMETER_PORT 'A'
+
+// @brief Position value of Potentiometer
+const double POTENTIOMETER_POSITION = 1050;
 
 // controller
 pros::Controller controller(pros::E_CONTROLLER_MASTER);
@@ -13,7 +17,7 @@ pros::MotorGroup leftMotors({-1, -2}, pros::MotorGearset::green); // left motor 
 pros::MotorGroup rightMotors({3, 4}, pros::MotorGearset::green); // right motor group
 pros::ADIAnalogIn potentiometer(POTENTIOMETER_PORT);// line sensor on port 1
 
-void moveToAngle(int targetAngle) {
+void moveToAngle(int targetAngle) { 
     int targetValue = targetAngle * 4095 / 265; // Map 0-300 degrees to 0-4095 range
     int currentValue = potentiometer.get_value();
 
@@ -98,23 +102,10 @@ lemlib::ExpoDriveCurve steerCurve(3, // joystick deadband out of 127
 // create the chassis
 lemlib::Chassis chassis(drivetrain, linearController, angularController, sensors, &throttleCurve, &steerCurve);
 
-/**
- * Runs initialization code. This occurs as soon as the program is started.
- *
- * All other competition modes are blocked by initialize; it is recommended
- * to keep execution time for this mode under a few seconds.
- */
+
 void initialize() {
     pros::lcd::initialize(); // initialize brain screen
     chassis.calibrate(); // calibrate sensors
-
-    // the default rate is 50. however, if you need to change the rate, you
-    // can do the following.
-    // lemlib::bufferedStdout().setRate(...);
-    // If you use bluetooth or a wired connection, you will want to have a rate of 10ms
-
-    // for more information on how the formatting for the loggers
-    // works, refer to the fmtlib docs
 
     // thread to for brain screen and position logging
     pros::Task screenTask([&]() {
@@ -144,7 +135,7 @@ void competition_initialize() {}
 // get a path used for pure pursuit
 // this needs to be put outside a function
 ASSET(test_txt); // '.' replaced with "_" to make c++ happy
-
+lemlib_tarball::Decoder decoder(test_txt);
 /**
  * Runs during auto
  *
@@ -159,14 +150,17 @@ void autonomous() {
     ladyBrown.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
 
     //Setting pose manually
-    chassis.setPose({-60, -18, 332});
+    chassis.setPose({-57, -14, 325});
+
+    chassis.follow(decoder["path1"],15,2000,false);
+    chassis.follow(decoder["path2"],15,2000);
+    chassis.follow(decoder["path3"],15,2000);
+    chassis.follow(decoder["path4"],15,2000,false);
 
     //Alliance wall stake
-    conveyor.move_velocity(200);
-    pros::delay(2000);
-    conveyor.move_velocity(0);
+    motorSpin(200, 2000);
 
-    chassis.follow(test_txt, 15, 4000);
+    //chassis.follow(test_txt, 15, 4000);
     // Follow set path
     while (true) {
         lemlib::Pose pose = chassis.getPose();
@@ -192,12 +186,10 @@ void opcontrol() {
     while (true) {
         // get joystick positions
         int leftY = controller.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y);
-        int rightX = controller.get_analog(pros::E_CONTROLLER_ANALOG_RIGHT_X);
+        int rightY = controller.get_analog(pros::E_CONTROLLER_ANALOG_RIGHT_Y);
         // move the chassis with curvature drive
-        chassis.arcade(leftY, rightX);
-    }
+        chassis.tank(leftY, rightY);
 
-    while (true) {
         if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_L1)) {
             ladyBrown.move_velocity(100);
         } else if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_L2)) {
@@ -205,9 +197,7 @@ void opcontrol() {
         } else {
             ladyBrown.move_velocity(0);
         }
-    }
 
-    while (true) {
         if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_R1)) {
             intake.move_velocity(200);
             conveyor.move_velocity(200);
@@ -218,22 +208,18 @@ void opcontrol() {
             conveyor.move_velocity(0);
             intake.move_velocity(0);
         }
-    }
 
-    while (true) {
         if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_A)) {
-            while (potentiometer.get_value() < 2060) {
+            while (potentiometer.get_value() < 1050) {
                 ladyBrown.move_velocity(100);
             }
-            if (potentiometer.get_value() > 2060) {
+            if (potentiometer.get_value() > 1050) {
                 ladyBrown.move_velocity(0);
             }
         } else {
            ladyBrown.move_velocity(0);
         }
-    }
 
-    while (true) {
         if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_L1)) {
             ladyBrown.move_velocity(100);
         } else if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_L2)) {
@@ -241,7 +227,7 @@ void opcontrol() {
         } else {
             ladyBrown.move_velocity(0);
         }
-    }
         // delay to save resources
         pros::delay(10);
+    }
 }
