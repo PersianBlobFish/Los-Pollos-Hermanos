@@ -114,4 +114,8 @@ void disabled() {}
 
 void competition_initialize() {
     pre_auton();
+<<<<<<< Updated upstream
 }
+=======
+}
+>>>>>>> Stashed changes
