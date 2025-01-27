@@ -97,6 +97,8 @@ pros::Motor conveyor(-7, pros::MotorGearset::green); // Conveyor motor
 pros::MotorGroup leftMotors({-1, -2}, pros::MotorGearset::green); // Left motor group
 pros::MotorGroup rightMotors({3, 4}, pros::MotorGearset::green); // Right motor group
 pros::ADIAnalogIn potentiometer('a');// Potentiometer on port A
+pros::adi::DigitalOut piston('b'); // Line sensor on port B
+pros::Vision vision_sensor(8); // Vision sensor on port 11  
 
 // Inertial Sensor on port 13
 pros::Imu imu(13);
@@ -153,12 +155,16 @@ void autonSelection() {
         // Determine which region was pressed and highlight it
         if (x < REGION_WIDTH && y < REGION_HEIGHT) {
             selectAutonRegion(0, 0); // Top-left
+            autonomousSelection = 1;
         } else if (x >= REGION_WIDTH && y < REGION_HEIGHT) {
             selectAutonRegion(REGION_WIDTH, 0); // Top-right
+            autonomousSelection = 2;
         } else if (x < REGION_WIDTH && y >= REGION_HEIGHT) {
             selectAutonRegion(0, REGION_HEIGHT); // Bottom-left
+            autonomousSelection = 3;
         } else {
-            selectAutonRegion(REGION_WIDTH, REGION_HEIGHT); // Bottom-right
+            selectAutonRegion(REGION_WIDTH, REGION_HEIGHT); // Bottom-right 
+            autonomousSelection = 4;
         }
     }
 }
@@ -305,22 +311,8 @@ void initialize() {
     //Print message to brain screen
     pros::lcd::set_text(2, "Inertial sensor calibrated!");
 
-    //Record the lastest preesed event
+    //Record the lastest pressed event
     pros::screen::touch_callback(autonSelection, TOUCH_PRESSED);
-    
-    // thread to for brain screen and position logging
-    pros::Task screenTask([&]() {
-        while (true) {
-            // print robot location to the brain screen
-            pros::lcd::print(0, "X: %f", chassis.getPose().x); // x
-            pros::lcd::print(1, "Y: %f", chassis.getPose().y); // y
-            pros::lcd::print(2, "Theta: %f", chassis.getPose().theta); // heading
-            // log position telemetry
-            lemlib::telemetrySink()->info("Chassis pose: {}", chassis.getPose());
-            // delay to save resources
-            pros::delay(50);
-        }
-    });
 }
 
 void pre_auton() {
@@ -355,16 +347,16 @@ void autonomous() {
 
     // Select autonomous routine
     switch (autonomousSelection) {
-        case 0:
+        case 1:
             leftAutonRed();
             break;
-        case 1:
+        case 2:
             rightAutonRed();
             break;
-        case 2:
+        case 3:
             leftAutonBlue();
             break;
-        case 3:
+        case 4:
             rightAutonBlue();
             break;
         default:
@@ -381,6 +373,26 @@ void opcontrol() {
     //Stop Lady Brown at the starting point
     ladyBrown.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
 
+    int frame_counter = 0;
+
+    bool retracted = false;
+    SORTING_STATE sorting_state = SORTING_STATE::NOT_DETECTED;
+    SPIN_STATE conveyor_state = SPIN_STATE::STOP;
+
+    auto RED_SIG = pros::Vision::signature_from_utility(
+    RED_SIG_ID, 3797, 11657, 7727, -2281, -1609, -1945, 1.5, 0);
+    auto BLUE_SIG = pros::Vision::signature_from_utility(
+    BLUE_SIG_ID, -4477, -3539, -4008, 51, 4449, 2250, 2.6, 0);
+
+    vision_sensor.set_signature(RED_SIG_ID, &RED_SIG);
+    vision_sensor.set_signature(BLUE_SIG_ID, &BLUE_SIG);
+
+    DONUT_COLOR scoring_color = DONUT_COLOR::BLUE;
+    pros::vision_object_s_t visible_donut;
+    double conveyor_stop_target = 0;
+
+    conveyor.tare_position();
+
         //Controller (tank drive)
     while (true) {
         // Get joystick positions
@@ -391,27 +403,29 @@ void opcontrol() {
 
         // lady brown control
         if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_L1)) {
-            ladyBrown.move_velocity(100);
+            ladyBrown.move_velocity(2 * LADYBROWN_SPEED_PERCENT);
         } else if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_L2)) {
-            ladyBrown.move_velocity(-100);
+            ladyBrown.move_velocity(-2 * LADYBROWN_SPEED_PERCENT);
         } else {
             ladyBrown.move_velocity(0);
         }
 
         // Intake and conveyor control
         if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_R1)) {
-            intake.move_velocity(200);
-            conveyor.move_velocity(200);
+            intake.move_velocity(2 * CONVEYOR_SPEED_PERCENT);
+            conveyor.move_velocity(2 * CONVEYOR_SPEED_PERCENT);
+
+            
         } else if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_R2)) {
-            intake.move_velocity(-200);
-            conveyor.move_velocity(-200);
+            intake.move_velocity(-2 * CONVEYOR_SPEED_PERCENT);
+            conveyor.move_velocity(-2 * CONVEYOR_SPEED_PERCENT);
         } else {
             conveyor.move_velocity(0);
             intake.move_velocity(0);
         }
 
         // Set lady brown to a specific position (intake)
-        if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_A)) {
+        if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_X)) {
             while (potentiometer.get_value() < POTENTIOMETER_POSITION) {
                 ladyBrown.move_velocity(100);
             }
@@ -422,7 +436,84 @@ void opcontrol() {
            ladyBrown.move_velocity(0);
         }
 
-        // delay to save resources
-        pros::delay(10);
+        if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_B)) {
+            if (retracted) {
+                piston.set_value(0);
+                retracted = false;
+                pros::delay(200);
+            } else {
+                piston.set_value(1);
+                retracted = true;
+                pros::delay(200);
+            }
+        }
+
+        if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_A)) {
+            if (scoring_color == DONUT_COLOR::RED) {
+                scoring_color = DONUT_COLOR::BLUE;
+                pros::delay(200);
+            } else {
+                scoring_color = DONUT_COLOR::RED;
+                pros::delay(200);
+            }
+        }
+
+        if (conveyor_state == SPIN_STATE::FORWARD) {
+            switch (sorting_state) {
+                case SORTING_STATE::NOT_DETECTED:
+                visible_donut = vision_sensor.get_by_sig(
+                    0, scoring_color == DONUT_COLOR::RED ? BLUE_SIG_ID : RED_SIG_ID);
+
+                if (visible_donut.height >= MIN_SCREEN_COVERAGE) {
+                    sorting_state = SORTING_STATE::STANDBY;
+                    double conveyor_position = conveyor.get_position();
+                    int conveyor_revs =
+                        int(conveyor_position / CONVEYOR_REVOLUTION_DEGREES);
+                    double conveyor_offset =
+                        conveyor_position - conveyor_revs * CONVEYOR_REVOLUTION_DEGREES;
+                    double hook_offset = conveyor_offset + DISTANCE_VISION_TO_TOP;
+                    double closest_offset = std::abs(hook_offset);
+
+                    int detected_hook = 1;
+
+                    if (std::abs(hook_offset + CONVEYOR_HOOK_2_OFFSET_DEGREES) >
+                        closest_offset) {
+                    detected_hook = 2;
+                    }
+
+                    conveyor_stop_target =
+                        (conveyor_revs + 1) * CONVEYOR_REVOLUTION_DEGREES;
+
+                    if (detected_hook == 2) {
+                    conveyor_stop_target += CONVEYOR_HOOK_2_OFFSET_DEGREES;
+                    }
+                }
+                break;
+
+                case SORTING_STATE::STANDBY:
+                if (conveyor.get_position() >= conveyor_stop_target) {
+                    conveyor.move_velocity(0);
+                    sorting_state = SORTING_STATE::STOP;
+                    pros::delay(CONVEYOR_HALT);
+                }
+                break;
+
+                default:
+                conveyor.move_velocity(2 * CONVEYOR_SPEED_PERCENT);
+            }
+            } else {
+            sorting_state = SORTING_STATE::NOT_DETECTED;
+            conveyor_stop_target = 0;
+            }
+
+        if (!(frame_counter % 10)) {
+            controller.print(0, 0, "Score: %s",
+                        scoring_color == DONUT_COLOR::RED ? "RED " : "BLUE");
+        }
+
+            frame_counter++;        
+
+        // delay to save resources (he ran 20ms why not)
+        pros::delay(20);
     }
 }
