@@ -9,6 +9,9 @@
 /// @brief Position value of Potentiometer
 const double POTENTIOMETER_POSITION = 1050;
 
+/// @brief Drivetrain RPM
+const double DRIVETRAIN_RPM = 200 * GEAR_RATIO;
+
 /// @brief Track width in inch.
 const double TRACK_WIDTH = 14.05;
 
@@ -250,7 +253,7 @@ lemlib::Drivetrain drivetrain(&leftMotors, // left motor group
                               &rightMotors, // right motor group
                               TRACK_WIDTH, // 10 inch track width
                               lemlib::Omniwheel::OLD_325, // using old 3.25" omnis
-                              340, // drivetrain rpm is 360
+                              DRIVETRAIN_RPM, // drivetrain rpm is 360
                               2 // horizontal drift is 2. If we had traction wheels, it would have been 8
 );
 
