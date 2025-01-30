@@ -12,6 +12,12 @@ const double POTENTIOMETER_POSITION = 1050;
 /// @brief Drivetrain RPM
 const double DRIVETRAIN_RPM = 200 * GEAR_RATIO;
 
+/// @brief The distance between the IMU and horizontal wall (in Inch)
+const double HORRIZONTAL_OFFSET = 0; //not set yet
+
+/// @brief The distance between the IMU and vertical wall (in Inch)
+const double VERTICAL_OFFSET = 0; //not set yet
+
 /// @brief Track width in inch.
 const double TRACK_WIDTH = 14.05;
 
@@ -101,13 +107,37 @@ pros::MotorGroup leftMotors({-1, -2}, pros::MotorGearset::green); // Left motor 
 pros::MotorGroup rightMotors({3, 4}, pros::MotorGearset::green); // Right motor group
 pros::ADIAnalogIn potentiometer('a');// Potentiometer on port A
 pros::adi::DigitalOut piston('b'); // Line sensor on port B
-pros::Vision vision_sensor(8); // Vision sensor on port 11  
+pros::Vision vision_sensor(8); // Vision sensor on port 8  
 
 // Inertial Sensor on port 13
 pros::Imu imu(13);
 
-//
-int autonomousSelection = 0; // Default autonomous selection
+/// Default autonomous selection
+int autonomousSelection = 0; 
+
+void recalibratePosition() {
+    double x, y, theta; // Position variables
+    if (autonomousSelection == 1) { //left auton red
+        x = 70 - HORRIZONTAL_OFFSET;
+        y = -23.6;
+        theta = 270;
+    } else if (autonomousSelection == 2) { //right auton red
+        x = 70- HORRIZONTAL_OFFSET;
+        y = 23.6;
+        theta = 0;
+    } else if (autonomousSelection == 3) { //left auton blue
+        x = HORRIZONTAL_OFFSET - 70;
+        y = 23.6;
+        theta = 0;
+    } else if (autonomousSelection = 4) { //right auton blue
+        x = HORRIZONTAL_OFFSET - 70;
+        y = -23.6;
+        theta = 90;
+    } else {
+        pros::lcd::set_text(1, "No default position found!");
+    }
+    chassis.setPose({x, y, theta});
+}
 
 // Utility function to draw a rectangle with a color
 void drawAutonRegion(int x, int y, int width, int height) {
@@ -159,15 +189,19 @@ void autonSelection() {
         if (x < REGION_WIDTH && y < REGION_HEIGHT) {
             selectAutonRegion(0, 0); // Top-left
             autonomousSelection = 1;
+            recalibratePosition();
         } else if (x >= REGION_WIDTH && y < REGION_HEIGHT) {
             selectAutonRegion(REGION_WIDTH, 0); // Top-right
             autonomousSelection = 2;
+            recalibratePosition();
         } else if (x < REGION_WIDTH && y >= REGION_HEIGHT) {
             selectAutonRegion(0, REGION_HEIGHT); // Bottom-left
-            autonomousSelection = 3;
+            autonomousSelection = 4;
+            recalibratePosition();
         } else {
             selectAutonRegion(REGION_WIDTH, REGION_HEIGHT); // Bottom-right 
-            autonomousSelection = 4;
+            autonomousSelection = 3;
+            recalibratePosition();  
         }
     }
 }
@@ -182,9 +216,6 @@ void leftAutonRed() {
 void rightAutonRed() {
     pros::lcd::clear();
     pros::lcd::set_text(3, "Executing RIGHT AUTON - RED");
-    //Setting post manually
-    chassis.setPose({-57, -14, 325});
-
     //Follow set path
     chassis.follow(decoder["path1"],15,2000,false);
     chassis.follow(decoder["path2"],15,2000);
