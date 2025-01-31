@@ -208,12 +208,14 @@ void autonSelection() {
 
 // Define autonomous routine functions
 void leftAutonRed() {
+    controller.print(0,0,"Left Auton - Red");
     pros::lcd::clear();
     pros::lcd::set_text(3, "Executing LEFT AUTON - RED");
     // Add your autonomous code for left red here
 }
 
 void rightAutonRed() {
+    controller.print(0,0,"Right Auton - Red");
     pros::lcd::clear();
     pros::lcd::set_text(3, "Executing RIGHT AUTON - RED");
     //Follow set path
@@ -230,7 +232,7 @@ void rightAutonRed() {
         lemlib::Pose pose = chassis.getPose();
         if (pose.x >= -30 && pose.y >= -18 ) {
             moveToAngle(23.94);
-            intake.move_velocity(200)&&conveyor.move_velocity(200);
+            intake.move_velocity(2 * CONVEYOR_SPEED_PERCENT)&&conveyor.move_velocity(2 * CONVEYOR_SPEED_PERCENT);
             pros::delay(2000);
             intake.move_velocity(0)&&conveyor.move_velocity(0);
         }
@@ -240,12 +242,14 @@ void rightAutonRed() {
 }
 
 void leftAutonBlue() {
+    controller.print(0,0,"Left Auton - Blue");
     pros::lcd::clear();
     pros::lcd::set_text(3, "Executing LEFT AUTON - BLUE");
     // Add your autonomous code for left blue here
 }
 
 void rightAutonBlue() {
+    controller.print(0,0,"Right Auton - Blue");
     pros::lcd::clear();
     pros::lcd::set_text(3, "Executing RIGHT AUTON - BLUE");
     // Add your autonomous code for right blue here
